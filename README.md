@@ -1,2 +1,2 @@
 # mg
-go mongodb 
+go get github.com/gocrud/mg
