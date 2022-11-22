@@ -1,4 +1,4 @@
-package mogo
+package mg
 
 import (
 	"context"
@@ -100,4 +100,8 @@ func TestCollection_FindOne(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestGetStrId(t *testing.T) {
+	t.Log(GetStrId())
 }

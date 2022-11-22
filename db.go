@@ -1,4 +1,4 @@
-package mogo
+package mg
 
 import "go.mongodb.org/mongo-driver/mongo"
 
