@@ -3,24 +3,13 @@ package mg
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"testing"
 )
-
-func init() {
-	var err error
-	cli, err = NewClient(context.Background(), options.Client().ApplyURI("mongodb://root:123456@127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019/admin?replicaSet=rs0"))
-	if err != nil {
-		panic(err)
-	}
-}
 
 var cli *Client
 
 type User struct {
-	Id   primitive.ObjectID
 	Name string
 	Age  int
 }
@@ -30,19 +19,37 @@ func (User) CollName() string {
 }
 
 func TestCollection_InsertOne(t *testing.T) {
-	db := cli.NewDB("testdb")
+	db := cli.NewDB("dev")
 	u := User{
 		Name: "王五",
 		Age:  22,
 	}
-	err := db.Coll("user").InsertOne(context.Background(), u)
+	id, err := db.Coll("user").InsertOne(context.Background(), u)
 	if err != nil {
 		t.Error(err)
 	}
+	log.Println(id.Hex())
+}
+
+func TestCollection_InsertMany(t *testing.T) {
+	db := cli.NewDB("dev")
+	u := User{
+		Name: "王五",
+		Age:  22,
+	}
+	u1 := User{
+		Name: "李四",
+		Age:  22,
+	}
+	ids, err := db.Coll("user").InsertMany(context.Background(), []any{u, u1})
+	if err != nil {
+		t.Error(err)
+	}
+	log.Println(ids)
 }
 
 func TestCollection_Find(t *testing.T) {
-	db := cli.NewDB("testdb")
+	db := cli.NewDB("dev")
 	var ls []User
 	err := db.Model(User{}).Find(context.Background(), bson.M{"name": "Petter"}, &ls)
 	if err != nil {
@@ -52,37 +59,13 @@ func TestCollection_Find(t *testing.T) {
 }
 
 func TestCollection_FindByID(t *testing.T) {
-	db := cli.NewDB("testdb")
+	db := cli.NewDB("dev")
 	var u User
 	err := db.Model(u).FindByID(context.Background(), "636600f02789a22e1d237d46", &u)
 	if err != nil {
 		t.Error(err)
 	}
 	t.Log(u)
-}
-
-func TestClient_Transaction(t *testing.T) {
-	db := cli.NewDB("testdb")
-	u := User{
-		Name: "ZhangSan",
-		Age:  25,
-	}
-	u2 := User{
-		Name: "LiSi",
-		Age:  30,
-	}
-	err := cli.Transaction(func(sessionContext mongo.SessionContext) error {
-		if err := db.Model(u).InsertOne(sessionContext, u); err != nil {
-			return err
-		}
-		if err := db.Model(u).InsertOne(sessionContext, u2); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		t.Error(err)
-	}
 }
 
 func TestCollection_UpdateOne(t *testing.T) {
