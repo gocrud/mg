@@ -50,18 +50,15 @@ func (c *Collection) FindOne(ctx context.Context, filter bson.M, data any) error
 	return nil
 }
 
-func (c *Collection) InsertOne(ctx context.Context, doc any) (primitive.ObjectID, error) {
-	res, err := c.coll.InsertOne(ctx, doc)
-	return res.InsertedID.(primitive.ObjectID), err
+func (c *Collection) InsertOne(ctx context.Context, doc any) error {
+	_, err := c.coll.InsertOne(ctx, doc)
+	return err
 }
 
-func (c *Collection) InsertMany(ctx context.Context, docs []any) ([]primitive.ObjectID, error) {
-	res, err := c.coll.InsertMany(ctx, docs)
-	ids := make([]primitive.ObjectID, len(res.InsertedIDs))
-	for i, v := range res.InsertedIDs {
-		ids[i] = v.(primitive.ObjectID)
-	}
-	return ids, err
+func (c *Collection) InsertMany(ctx context.Context, docs []any) error {
+	_, err := c.coll.InsertMany(ctx, docs)
+
+	return err
 }
 
 func (c *Collection) DeleteOne(ctx context.Context, filter bson.M) error {
