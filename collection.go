@@ -48,6 +48,7 @@ func (a *Aggregate) FindPageList(pageIndex, pageSize int64, data any) (int64, er
 		return 0, err
 	}
 
+	var pipes = a.pipes
 	if count > 0 {
 		a.pipes = append(a.pipes, bson.D{{"$skip", (pageIndex - 1) * pageSize}})
 		a.pipes = append(a.pipes, bson.D{{"$limit", pageSize}})
@@ -57,16 +58,19 @@ func (a *Aggregate) FindPageList(pageIndex, pageSize int64, data any) (int64, er
 	if err != nil {
 		return 0, err
 	}
+	a.pipes = pipes
 	return count, nil
 }
 
 func (a *Aggregate) Count() (int64, error) {
+	var pipes = a.pipes
 	a.pipes = append(a.pipes, bson.D{{"$count", "count"}})
 	var data []map[string]int64
 	err := a.Find(&data)
 	if err != nil {
 		return 0, err
 	}
+	a.pipes = pipes
 	if data != nil && len(data) > 0 {
 		return data[0]["count"], nil
 	}
