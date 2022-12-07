@@ -16,6 +16,63 @@ type Collection struct {
 	coll *mongo.Collection
 }
 
+type Aggregate struct {
+	pipes []bson.D
+	coll  *mongo.Collection
+	ctx   context.Context
+}
+
+func (a *Aggregate) Find(data any) error {
+	cur, err := a.coll.Aggregate(a.ctx, a.pipes)
+	if err == mongo.ErrNoDocuments {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	defer cur.Close(a.ctx)
+	err = cur.All(a.ctx, data)
+	return err
+}
+
+func (a *Aggregate) FindPageList(pageIndex, pageSize int64, data any) (int64, error) {
+	if pageIndex < 1 {
+		pageIndex = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	count, err := a.Count()
+	if err != nil {
+		return 0, err
+	}
+
+	if count > 0 {
+		a.pipes = append(a.pipes, bson.D{{"$skip", (pageIndex - 1) * pageSize}})
+		a.pipes = append(a.pipes, bson.D{{"$limit", pageSize}})
+	}
+
+	err = a.Find(data)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (a *Aggregate) Count() (int64, error) {
+	a.pipes = append(a.pipes, bson.D{{"$count", "count"}})
+	var data []map[string]int64
+	err := a.Find(&data)
+	if err != nil {
+		return 0, err
+	}
+	if data != nil && len(data) > 0 {
+		return data[0]["count"], nil
+	}
+	return 0, nil
+}
+
 func (c *Collection) FindByID(ctx context.Context, id string, data any) error {
 	val, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -86,15 +143,10 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter bson.M, data any) er
 	return err
 }
 
-func (c *Collection) Aggregate(ctx context.Context, pipes []bson.D, data any) error {
-	cur, err := c.coll.Aggregate(ctx, pipes)
-	if err == mongo.ErrNoDocuments {
-		return nil
+func (c *Collection) Aggregate(ctx context.Context, pipes ...bson.D) *Aggregate {
+	return &Aggregate{
+		pipes: pipes,
+		coll:  c.coll,
+		ctx:   ctx,
 	}
-	if err != nil {
-		return err
-	}
-	defer cur.Close(ctx)
-	err = cur.All(ctx, data)
-	return err
 }
