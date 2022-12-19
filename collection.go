@@ -2,7 +2,6 @@ package mg
 
 import (
 	"context"
-	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -78,11 +77,15 @@ func (a *Aggregate) Count() (int64, error) {
 }
 
 func (c *Collection) FindByID(ctx context.Context, id string, data any) error {
-	val, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return errors.New("invalid id")
+	err := c.coll.FindOne(ctx, bson.M{"_id": id}).Decode(data)
+	if err == mongo.ErrNoDocuments {
+		return nil
 	}
-	err = c.coll.FindOne(ctx, bson.M{"_id": val}).Decode(data)
+	return err
+}
+
+func (c *Collection) FindByObjID(ctx context.Context, id primitive.ObjectID, data any) error {
+	err := c.coll.FindOne(ctx, bson.M{"_id": id}).Decode(data)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	}
