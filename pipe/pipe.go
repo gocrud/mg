@@ -26,6 +26,13 @@ func (m *Matcher) IF(condition bool, e bson.E) *Matcher {
 	return m
 }
 
+func (m *Matcher) Match(e bson.E) *Matcher {
+	if len(e.Key) > 0 {
+		m.container = append(m.container, e)
+	}
+	return m
+}
+
 func (m *Matcher) Build() bson.D {
 	if len(m.container) > 0 {
 		return bson.D{{"$match", m.container}}
