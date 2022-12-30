@@ -151,8 +151,16 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter bson.M, data any) er
 }
 
 func (c *Collection) Aggregate(ctx context.Context, pipes ...bson.D) *Aggregate {
+	var p []bson.D
+	if len(pipes) > 0 {
+		for _, v := range pipes {
+			if len(v) > 0 {
+				p = append(p, v)
+			}
+		}
+	}
 	return &Aggregate{
-		pipes: pipes,
+		pipes: p,
 		coll:  c.coll,
 		ctx:   ctx,
 	}
